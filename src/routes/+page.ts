@@ -1,26 +1,16 @@
 import type { PageLoad } from './$types';
+import type { FileInfo } from '$lib/types';
 
-export interface FileInfo {
-    name: string;
-    type: string;
-    size: number;
-    date: Date;
-}
+export const load: PageLoad = async ({ fetch }) => {
+  const fetchFiles = async (mode: string): Promise<FileInfo[]> => {
+    const response = await fetch(`/api/files?mode=${mode}`);
+    const files = await response.json();
+    return files || [];
+  };
 
-export interface PageData {
-    data: FileInfo[];
-}
-
-
-
-export const load: PageLoad<PageData> = async ({ fetch }) => {
-    const response = await fetch('/api/files?mode=random');
-    const files: FileInfo[] = await response.json().catch((e) => console.error(e));
-
-    if (!files) return {data: []}
-    console.log('Fichiers récupérés:', files.length);
-
-    return {
-        data: files
-    };
+  return {
+    streamed: {
+      files: fetchFiles('random') // ou le mode par défaut que vous souhaitez
+    }
+  };
 };

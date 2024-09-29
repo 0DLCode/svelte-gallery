@@ -64,7 +64,7 @@ function getFileType(extension: string): "image" | "video" | "other" {
 }
 
 
-export const GET = async ({ url }) => {
+export const GET = async ({ url, getClientAddress}) => {
     try {
         const mode = url.searchParams.get('mode');
 
@@ -88,7 +88,7 @@ export const GET = async ({ url }) => {
                 break;
         }
 
-        console.log(`[  => ] Return of ${sortedList.length} files (mode: ${mode || 'default'})`);
+        console.log(`${getClientAddress()} [  => ] Return of ${sortedList.length} files (mode: ${mode || 'default'})`);
         return json(sortedList);
     } catch (_error) {
         // Gérer les erreurs et renvoyer une réponse avec un statut 500

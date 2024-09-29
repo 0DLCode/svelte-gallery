@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { directoryPath } from '$lib/config';
 
-export async function DELETE({ url }) {
+export async function DELETE({ url, getClientAddress }) {
     try {
         const filename = url.searchParams.get('file');
         if (!filename) {
@@ -18,7 +18,7 @@ export async function DELETE({ url }) {
 
         // Supprimer le fichier
         await fs.unlink(filePath);
-        console.log(`Fichier ${filename} supprimé avec succès`)
+        console.log(`{${getClientAddress()}} Fichier ${filename} supprimé avec succès`)
         return json({ message: `Fichier ${filename} supprimé avec succès` });
     } catch (error) {
         if (error.code === 'ENOENT') {

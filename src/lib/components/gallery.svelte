@@ -1,26 +1,26 @@
 <script lang="ts">
+  import type { PageData } from './$types';
   import type { FileInfo } from '$lib/types';
   import FileItem from '$lib/components/fileItem.svelte';
   import ImageModal from '$lib/components/imageModal.svelte';
   import Loading from '$lib/components/loading.svelte';
   import SortControls from '$lib/components/sortControls.svelte';
-  
-  export let files: FileInfo[];
+  import { onMount } from 'svelte';
+  import Cookies from 'js-cookie';
+
+  export let data: PageData;
 
   let selectedImage: FileInfo | null = null;
-  let isLoading = true;
-  let loadedImagesCount = 0;
   let showFilename = true;
   let sortOption: string = "random";
   let optionSelected: string = "random";
-  let columnsCount = 5; // Valeur par défaut
+  let columnsCount: number;
   $: minImagesToShow = columnsCount;
+
+  let loadedImagesCount = 0;
 
   function handleImageLoad() {
     loadedImagesCount++;
-    if (loadedImagesCount >= minImagesToShow) {
-      isLoading = false;
-    }
   }
 
   function openImage(file: FileInfo) {
@@ -34,52 +34,115 @@
 
   async function fetchFiles(mode: string) {
     const response = await fetch('/api/files?mode=' + mode);
-    const files: FileInfo[] = await response.json().catch((e) => console.error(e));
-
-    if (!files) return []
-    console.log('Fichiers récupérés:', files.length);
-
-    return files
+    return await response.json().catch((e) => console.error(e)) || [];
   }
 
   function handleFileDeleted(event: CustomEvent<string>) {
     const deletedFileName = event.detail;
-    files = files.filter(file => file.name !== deletedFileName);
+    data.streamed.files = data.streamed.files.then(files => 
+      files.filter(file => file.name !== deletedFileName)
+    );
   }
 
   async function refresh() {
-    if (optionSelected === sortOption) return
-    optionSelected = sortOption
-    console.log("fetchFiles", optionSelected)
-    files = await fetchFiles(optionSelected)
+    if (optionSelected === sortOption) return;
+    optionSelected = sortOption;
+    console.log("fetchFiles", optionSelected);
+    data.streamed.files = fetchFiles(optionSelected);
   }
+
 
   setInterval(refresh, 500)
 
-  $: gridClass = `grid gap-4 w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-${columnsCount}`;
-</script>
+  function updateColumnsCountCookie(value: number) {
+    if (typeof window !== 'undefined') {
+      const currentCookie = Cookies.get('columnsCount');
+      if (currentCookie !== value.toString()) {
+        Cookies.set('columnsCount', value.toString(), { expires: 999999 });
+        console.log("Cookie ColumnCount set to", value);
+      }
+    }
+  }
 
-{#if isLoading}
-  <Loading />
-{/if}
+  function updateShowFilesCookies(value: boolean) {
+    if (typeof window !== 'undefined') {
+      const currentCookie = Cookies.get('showFiles');
+      if (currentCookie !== value.toString()) {
+        Cookies.set('showFiles', value.toString(), { expires: 999999 });
+        console.log("Cookie showFiles set to", value);
+      }
+    }
+  }
+
+  $: {
+    if (columnsCount !== undefined) {
+      updateColumnsCountCookie(columnsCount);
+    }
+    if (showFilename !== undefined) {
+      updateShowFilesCookies(showFilename)
+    }
+  }
+
+  function getGridClass(columns: number) {
+    const baseClass = "grid gap-4 w-full";
+    switch(columns) {
+      case 1: return `${baseClass} grid-cols-1`;
+      case 2: return `${baseClass} grid-cols-2`;
+      case 3: return `${baseClass} grid-cols-3`;
+      case 4: return `${baseClass} grid-cols-4`;
+      case 5: return `${baseClass} grid-cols-5`;
+      case 6: return `${baseClass} grid-cols-6`;
+      default: return `${baseClass} grid-cols-4`;
+    }
+  }
+
+  onMount(() => {
+    if (typeof window !== 'undefined') {
+      const savedColumnsCount = Cookies.get('columnsCount');
+      if (savedColumnsCount) {
+        console.log("load columnsCount from cookies", savedColumnsCount);
+        columnsCount = parseInt(savedColumnsCount);
+      } else {
+        columnsCount = window.innerWidth < 640 ? 2 : window.innerWidth < 1024 ? 4 : 5;
+      }
+      const savedShowFiles = Cookies.get('showFiles');  onMount(() => {
+    
+    });
+      if (savedShowFiles) {
+        showFilename = savedShowFiles === "true";
+      }
+    }
+    
+    // Démarrer le rafraîchissement périodique
+    const intervalId = setInterval(refresh, 500);
+    return () => clearInterval(intervalId);
+    
+  });
+</script>
 
 <SortControls bind:sortOption bind:columnsCount {showFilename} on:toggleFilename={() => showFilename = !showFilename} />
 
-{#if files && files.length > 0}
-  <div class={gridClass}>
-    {#each files as file (file.name)}
-      <FileItem 
-        {file} 
-        {showFilename} 
-        on:openImage={() => openImage(file)}
-        on:imageLoad={handleImageLoad}
-        on:fileDeleted={handleFileDeleted}
-      />
-    {/each}
-  </div>
-{:else}
-  <p>Aucun fichier trouvé.</p>
-{/if}
+{#await data.streamed.files}
+  <Loading />
+{:then files}
+  {#if files && files.length > 0}
+    <div class={getGridClass(columnsCount)}>
+      {#each files as file (file.name)}
+        <FileItem 
+          {file} 
+          {showFilename} 
+          on:openImage={() => openImage(file)}
+          on:imageLoad={handleImageLoad}
+          on:fileDeleted={handleFileDeleted}
+        />
+      {/each}
+    </div>
+  {:else}
+    <p>Aucun fichier trouvé.</p>
+  {/if}
+{:catch error}
+  <p>Erreur lors du chargement des fichiers : {error.message}</p>
+{/await}
 
 {#if selectedImage}
   <ImageModal {selectedImage} on:close={closeImage} />
