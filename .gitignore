@@ -1,0 +1,90 @@
+node_modules
+
+# Output
+.output
+.vercel
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Dépendances
+/node_modules
+/.pnp
+.pnp.js
+
+# pnpm spécifique
+pnpm-lock.yaml
+.pnpm-store/
+
+# Fichiers de build SvelteKit
+/build
+/.svelte-kit
+/package
+
+# Fichiers de production
+/dist
+
+# Fichiers de développement
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Fichiers d'environnement
+.env
+.env.*
+!.env.example
+
+# Fichiers d'IDE et d'éditeur
+/.idea
+/.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Fichiers de cache
+.cache
+.parcel-cache
+
+# Fichiers de couverture de tests
+/coverage
+
+# Fichiers temporaires
+*.tmp
+*.temp
+
+# Fichiers de débogage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Fichiers spécifiques à Tailwind CSS
+# (généralement pas nécessaire de les ignorer car ils sont générés à partir de votre configuration)
+
+# Fichiers de verrouillage de version
+# Décommentez si vous préférez ne pas les versionner
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Fichiers de déploiement statique
+# Ajoutez ceci si vous utilisez adapter-static et ne voulez pas versionner les fichiers de build
+/static
