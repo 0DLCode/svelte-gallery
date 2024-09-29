@@ -11,10 +11,13 @@ export interface PageData {
     data: FileInfo[];
 }
 
-export const load: PageLoad<PageData> = async ({ fetch }) => {
-    const response = await fetch('/api/files');
-    const files: FileInfo[] = await response.json();
 
+
+export const load: PageLoad<PageData> = async ({ fetch }) => {
+    const response = await fetch('/api/files?mode=random');
+    const files: FileInfo[] = await response.json().catch((e) => console.error(e));
+
+    if (!files) return {data: []}
     console.log('Fichiers récupérés:', files.length);
 
     return {

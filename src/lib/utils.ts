@@ -12,3 +12,4 @@ export function sortFiles(files: FileInfo[], sortOption: string): FileInfo[] {
     return 0;
   });
 }
+
