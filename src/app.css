@@ -1,6 +1,7 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 
 body {
     @apply bg-slate-700;
@@ -22,6 +23,37 @@ body::-webkit-scrollbar-thumb {
     border: 5px solid transparent;
 }
 
+.tabs {
+    display: flex;
+    cursor: pointer;
+    padding: 0;
+    padding-left: 1vw;
+    list-style: none;
+    background-color: #1e2124;
+    color: #6366f1; /* Changed to blurple */
+}
 
+@layer components {
+    .bg-blurple {
+        background-color: #6366f1;
+    }
+    .bg-blurple-100 {
+        background-color: #4754cc;
+    }
+}
 
-  
+.tab {
+    @apply flex items-center justify-center px-4 py-2 text-sm font-medium leading-5 text-gray-300 hover:text-gray-100 focus:outline-none transition duration-150 ease-in-out bg-gray-700 border border-transparent shadow-sm active:bg-gray-600 active:text-gray-100;
+}
+
+.active {
+    @apply flex items-center justify-center px-4 py-2 text-sm font-medium leading-5 text-white bg-blurple hover:bg-blurple-100 focus:outline-none transition duration-150 ease-in-out;
+}
+
+.tab:not(.active) {
+    @apply flex items-center justify-center px-4 py-2 text-sm font-medium leading-5 text-gray-300 hover:text-gray-100 focus:outline-none transition duration-150 ease-in-out bg-gray-700 border border-transparent shadow-sm;
+}
+
+.tab:hover {
+    @apply flex items-center justify-center px-4 py-2 text-sm font-medium leading-5 text-white bg-blurple hover:bg-blurple-100 focus:outline-none transition duration-150 ease-in-out;
+}

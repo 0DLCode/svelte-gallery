@@ -1,3 +1,4 @@
+import { directoryPath } from '$lib/config';
 import { json } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
@@ -9,36 +10,61 @@ interface FileInfo {
     date: Date;
 }
 
-const directoryPath = path.resolve('static/media');  // Dossier contenant les fichiers
-let fileList: FileInfo[];
+
+let directorys: Array<string> = [];
+const fileList = new Map<string, FileInfo[]>();
 
 function listFiles() {
-  try {
-    // Lire le contenu du dossier
-    const files = fs.readdirSync(directoryPath);
-
-    // Créer une liste des fichiers avec leurs informations
-    fileList = files.map(file => {
-        const filePath = path.join(directoryPath, file);
-        const stats = fs.statSync(filePath);
-        if (stats.isDirectory()) return null
-        const type =  getFileType(path.extname(file));
-        if (type == "other") return null
-
-        return {
-            name: file,
-            type: type,
-            size: stats.size,
-            date: stats.mtime
-        };
-    }).filter(x => x !== null)
-  } catch (error) {
-    console.error(error)
-  }
+  directorys.forEach(async (directory) => {
+    try {
+      const dPath = path.join(directoryPath, directory);
+      let files;
+      if (fs.statSync(dPath).isFile() && directory.endsWith('.json')) {
+        const linksFile = JSON.parse(fs.readFileSync(dPath, 'utf8'));
+        files = linksFile.links.map(link => {
+          return {
+              name: path.basename(link),
+              type: "image",
+              size: 0,
+              date: new Date()
+          };
+        });
+      } else {
+        // Lire le contenu du dossier
+        files = fs.readdirSync(dPath);
+      }
+      
+  
+      // Créer une liste des fichiers avec leurs informations
+      fileList.set(directory, files.map(file => {
+          const filePath = path.join(dPath, file);
+          const stats = fs.statSync(filePath);
+          if (stats.isDirectory()) return null
+          const type =  getFileType(path.extname(file));
+          if (type == "other") return null
+  
+          return {
+              name: file,
+              type: type,
+              size: stats.size,
+              date: stats.mtime
+          };
+      }).filter(x => x !== null))
+    } catch (error) {
+      console.error(error)
+    }
+  })
 }
 
+function updateDirectorys() {
+  const files = fs.readdirSync(directoryPath);
+  directorys = files.filter(file => fs.statSync(path.join(directoryPath, file)).isDirectory());
+}
+
+updateDirectorys()
 listFiles()
 setInterval(() => {
+  updateDirectorys()
   listFiles()
 }, 1000)
 
@@ -66,9 +92,13 @@ function getFileType(extension: string): "image" | "video" | "other" {
 
 export const GET = async ({ url, getClientAddress}) => {
     try {
+        const directory = url.searchParams.get('directory');
         const mode = url.searchParams.get('mode');
 
-        const sortedList = [...fileList]; // Créer une copie de la liste pour ne pas modifier l'original
+        const files = fileList.get(directory || '') || [];
+
+        const sortedList = [...files]; // Créer une copie de la liste pour ne pas modifier l'original
+        console.log()
 
         switch (mode) {
             case 'random':
@@ -88,7 +118,7 @@ export const GET = async ({ url, getClientAddress}) => {
                 break;
         }
 
-        console.log(`${getClientAddress()} [  => ] Return of ${sortedList.length} files (mode: ${mode || 'default'})`);
+        console.log(`${getClientAddress()} [  => ] Return of ${sortedList.length} files (mode: ${mode || 'default'}  &  directory: ${directory}  )`);
         return json(sortedList);
     } catch (_error) {
         // Gérer les erreurs et renvoyer une réponse avec un statut 500

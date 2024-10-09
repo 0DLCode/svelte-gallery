@@ -7,6 +7,7 @@
   
     export let file: FileInfo;
     export let showFilename: boolean;
+    export let path: string;
   
     const dispatch = createEventDispatcher();
   
@@ -19,9 +20,8 @@
       }
     }
   
-    function openTabImage(filename: string) {
-      const url = `${base}/media/${filename}`
-      copyToClipboard(window.location.origin + url)
+    function openTabImage() {
+      copyToClipboard(window.location.origin + path)
     }
   
     function handleImageError(event: Event) {
@@ -54,8 +54,8 @@
     class="relative overflow-hidden rounded-lg shadow-lg cursor-pointer transform transition-transform duration-100 hover:scale-105"
     style="max-height: 80vh;"
     on:click={() => dispatch('openImage')}
-    on:dblclick={() => openTabImage(file.name)}
-    on:auxclick|preventDefault={() => openTabImage(file.name)}
+    on:dblclick={openTabImage}
+    on:auxclick|preventDefault={openTabImage}
 >
     {#if file.type.includes('image')}
     <img 
@@ -63,7 +63,7 @@
     use:lazyLoad
     on:load={() => dispatch('imageLoad')}
     on:error|preventDefault|stopPropagation={handleImageError}
-    data-src={`${base}/media/${encodeURIComponent(file.name)}`}
+    data-src={path}
     alt={file.name}
     class="w-full h-full object-cover object-center"
     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
@@ -71,7 +71,7 @@
     {:else if file.type.includes('video')}
         <!-- svelte-ignore a11y-media-has-caption -->
         <video 
-        src={`/media/${file.name}`} 
+        src={path} 
         class="w-full h-full object-cover object-center" 
         on:loadeddata={() => dispatch('imageLoad')}
         ></video>

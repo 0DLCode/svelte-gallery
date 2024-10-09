@@ -1,16 +1,19 @@
 import type { PageLoad } from './$types';
-import type { FileInfo } from '$lib/types';
 
 export const load: PageLoad = async ({ fetch }) => {
-  const fetchFiles = async (mode: string): Promise<FileInfo[]> => {
-    const response = await fetch(`/api/files?mode=${mode}`);
-    const files = await response.json();
-    return files || [];
-  };
+  const fetchDir = async () => {
+    const response = await fetch(`/api/list`);
+    return await response.json();
+  }
+  const fetched = await fetchDir();
+  // console.log(JSON.stringify(fetched) + "\n");
+  const directories = fetched["directories"];
+  const defaultDirectory = fetched["defaultDirectory"];
+
+  // console.log("Dossier par défaut:", defaultDirectory);
 
   return {
-    streamed: {
-      files: fetchFiles('random') // ou le mode par défaut que vous souhaitez
-    }
+    directories: directories,
+    defaultDirectory: defaultDirectory
   };
 };

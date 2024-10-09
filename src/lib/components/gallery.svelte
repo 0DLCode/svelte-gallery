@@ -7,14 +7,20 @@
   import SortControls from '$lib/components/sortControls.svelte';
   import { onMount } from 'svelte';
   import Cookies from 'js-cookie';
+	import { base } from '$app/paths';
 
-  export let data: PageData;
-
+  export let directory: string;
+ 
   let selectedImage: FileInfo | null = null;
+  let selectedImagePath: string;
   let showFilename = true;
   let sortOption: string = "random";
+  let files = fetchFiles(sortOption);
+  let fetchedFiles: FileInfo[] = [];
   let optionSelected: string = "random";
   let columnsCount: number;
+  let modalInterval: number = 3000;
+  const pathTo = `${base}/medias/${directory}`;
   $: minImagesToShow = columnsCount;
 
   let loadedImagesCount = 0;
@@ -23,8 +29,9 @@
     loadedImagesCount++;
   }
 
-  function openImage(file: FileInfo) {
+  function openImage(file: FileInfo, path: string) {
     selectedImage = file;
+    selectedImagePath = path;
   }
 
   function closeImage() {
@@ -33,22 +40,26 @@
   }
 
   async function fetchFiles(mode: string) {
-    const response = await fetch('/api/files?mode=' + mode);
+    console.log(`Fetching files in ${directory} mode: ${mode}...`);
+    const response = await fetch(`/api/files?mode=${mode}&directory=${directory}`);
     return await response.json().catch((e) => console.error(e)) || [];
   }
 
   function handleFileDeleted(event: CustomEvent<string>) {
     const deletedFileName = event.detail;
-    data.streamed.files = data.streamed.files.then(files => 
+    files = files.then(files => 
       files.filter(file => file.name !== deletedFileName)
     );
   }
+
+  let getPreviousImage = (file: FileInfo) => {};
+  let getNextImage = (file: FileInfo) => {}
 
   async function refresh() {
     if (optionSelected === sortOption) return;
     optionSelected = sortOption;
     console.log("fetchFiles", optionSelected);
-    data.streamed.files = fetchFiles(optionSelected);
+    files = fetchFiles(optionSelected);
   }
 
 
@@ -97,6 +108,19 @@
   }
 
   onMount(() => {
+    files.then((data: FileInfo[]) => {
+      fetchedFiles = data;
+      getPreviousImage = (file: FileInfo) => {
+        const index = fetchedFiles.findIndex(file => file.name === file.name);
+        return fetchedFiles[index - 1] || null;
+      }
+
+      getNextImage = (file: FileInfo) => {
+        const index = fetchedFiles.findIndex(file => file.name === file.name);
+        return fetchedFiles[index + 1] || null;
+      }
+    })
+
     if (typeof window !== 'undefined') {
       const savedColumnsCount = Cookies.get('columnsCount');
       if (savedColumnsCount) {
@@ -105,9 +129,7 @@
       } else {
         columnsCount = window.innerWidth < 640 ? 2 : window.innerWidth < 1024 ? 4 : 5;
       }
-      const savedShowFiles = Cookies.get('showFiles');  onMount(() => {
-    
-    });
+      const savedShowFiles = Cookies.get('showFiles');
       if (savedShowFiles) {
         showFilename = savedShowFiles === "true";
       }
@@ -120,18 +142,20 @@
   });
 </script>
 
-<SortControls bind:sortOption bind:columnsCount {showFilename} on:toggleFilename={() => showFilename = !showFilename} />
+<SortControls bind:sortOption bind:columnsCount {showFilename} {modalInterval} on:toggleFilename={() => showFilename = !showFilename} />
 
-{#await data.streamed.files}
+{#if files}
+{#await files}
   <Loading />
 {:then files}
   {#if files && files.length > 0}
     <div class={getGridClass(columnsCount)}>
       {#each files as file (file.name)}
         <FileItem 
+          path={`${pathTo}/${file.name}`}
           {file} 
           {showFilename} 
-          on:openImage={() => openImage(file)}
+          on:openImage={() => openImage(file, `${pathTo}/${file.name}`, files.indexOf(file))}
           on:imageLoad={handleImageLoad}
           on:fileDeleted={handleFileDeleted}
         />
@@ -143,7 +167,10 @@
 {:catch error}
   <p>Erreur lors du chargement des fichiers : {error.message}</p>
 {/await}
+{:else}
+<Loading />
+{/if}
 
 {#if selectedImage}
-  <ImageModal {selectedImage} on:close={closeImage} />
+  <ImageModal {selectedImage} {modalInterval} files={fetchedFiles} pathTo={pathTo}  on:close={closeImage} />
 {/if}
